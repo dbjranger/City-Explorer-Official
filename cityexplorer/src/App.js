@@ -15,7 +15,8 @@ class App extends React.Component {
       display_name: "",
       locationResult: {},
       renderError: false,
-      errorMessage: ''
+      errorMessage: '',
+      weather: [],
     };
   }
 
@@ -25,6 +26,10 @@ class App extends React.Component {
 
   getCity = async (e) => {
     e.preventDefault();
+    
+    let cityName = this.state.searchQuery;
+    let weatherData = await axios.get(`http://localhost:3001/weather?cityName=${cityName}`);
+    console.log(weatherData);
 
     try {
       let cityResults =
@@ -39,9 +44,10 @@ class App extends React.Component {
         lat: cityResults.data[0].lat,
         lon: cityResults.data[0].lon,
         display_name: cityResults.data[0].display_name,
+        weather: weatherData.data
       });
     } catch (error) {
-      console.log('The error is: ', error.response);
+      console.log('The error is: ', error);
       this.setState({
         renderError: true,
         errorMessage: `Error: ${error.response.status}, ${error.response.data.error}`,
@@ -67,6 +73,11 @@ class App extends React.Component {
           </Form>
         </div>
 
+        {/* Displaying Weather Data */}
+        {this.state.weather ? this.state.weather.map(forecast => <h3>{forecast.description}</h3>) 
+        : ''}
+
+        {/* Displaying Map Data */}
         {this.state.display_name ? <h3>{this.state.display_name}</h3> : ''}
         {this.state.lat ? <h3>The latitude is: {this.state.lat}</h3> : ''}
         {this.state.lon ? <h3>The longitude is: {this.state.lon}</h3> : ''}
