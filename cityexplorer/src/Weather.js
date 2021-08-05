@@ -1,15 +1,19 @@
+
 import React from 'react';
-import axios from "axios";
+import Card from 'react-bootstrap/Card';
 
 class Weather extends React.Component {
+
   render() {
     return (
-      <>
-        console.log('Hello World');
-      </>
+      <Card border="primary" className="text-center">
+        <Card.Body>
+          <Card.Header>{this.props.date}</Card.Header>
+          <Card.Text>{this.props.description}</Card.Text>
+        </Card.Body>
+      </Card>
     )
   }
-};
+}
 
-  
-export default Weather; 
+export default Weather;

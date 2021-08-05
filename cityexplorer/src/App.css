@@ -1,3 +1,29 @@
+h1 {
+  text-align: center;
+  background-color: aqua;
+  padding-bottom: 10px;
+}
+
+div .one{
+  background-color: gray;
+  padding-bottom: 10px;
+}
+
+div .cont {
+  background-color: gray;
+  padding: 10px 10px 10px 10px;
+}
+
+.weather-title {
+  font-weight: bolder;
+};
+
+.cont {
+  background-color: whitesmoke;
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+
 .App {
   text-align: center;
 }
