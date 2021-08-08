@@ -1,16 +1,16 @@
+
 import React from 'react';
-import './App.css';
 import axios from 'axios';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Image from 'react-bootstrap/Image';
 import Container from 'react-bootstrap/Container';
-import Weather from './components/Weather';
-import Movies from './components/Movies';
+import CardColumns from 'react-bootstrap/CardColumns';
+import Weather from './Weather.js';
+import Movie from './Movie.js';
 
-class App extends React.Component {
-
+class CityForm extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -25,9 +25,9 @@ class App extends React.Component {
       displayWeather: false,
       displayWeatherError: false,
       weatherErrMessage: '',
-      movieData: [],
-      displayMovies: false,
-      movieErrMessage: '',
+      movies: [],
+      showMovies: false,
+      cityInput: ''
     }
   };
 
@@ -43,26 +43,43 @@ class App extends React.Component {
         lat: cityResults.data[0].lat,
         lon: cityResults.data[0].lon,
         name: cityResults.data[0].display_name,
-        map: `https://maps.locationiq.com/v3/staticmap?key=${process.env.REACT_APP_LOCATIONIQ_KEY}&center=${cityResults.data[0].lat},${cityResults.data[0].lon}&zoom=12`,
         renderLatLon: true,
         displayError: false,
       })
-      this.getMovieInfo();
     } catch (error) {
       this.setState({
         renderLatLon: false,
         displayError: true,
         displayWeather: false,
-        displayMovies: false,
         errorMessage: `Error: ${error.response.status}, ${error.response.data.error}`
-      })
+      });
+      console.log("Get city info" + this.state.errorMessage)
     }
-    this.getWeatherInfo();
+    if (!this.state.errorMessage) {
+      this.getWeatherinfo();
+      this.getMovieInfo();
+    }
   };
 
-  getWeatherInfo = async (e) => {
+  getMovieInfo = async () => { 
     try {
-      let weatherResults = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/weather?lat=${this.state.lat}&lon=${this.state.lon}&searchQuery=${this.state.city}`);
+      let results = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/movies?search=${this.state.cityInput}`);
+      this.setState({
+        movies: results.data,
+      });
+    } catch (error) {
+      this.setState({
+        renderError: true,
+        errorMessage: `ERROR: ${error}`
+      })
+    }
+  };
+
+  getWeatherinfo = async () => {
+    try {
+      let weatherResults = await axios.get(`http://localhost:3001/weather?lat=${this.state.lat}&lon=${this.state.lon}`);
+      console.log(`Weather Res: ${weatherResults.data}`)
+
       this.setState({
         weatherData: weatherResults.data,
         displayWeather: true,
@@ -73,33 +90,32 @@ class App extends React.Component {
         displayWeather: false,
         displayWeatherError: true,
         weatherErrMessage: `Error: ${error.response.status}, ${error.response.data}`,
+
       })
       console.log(error.response);
     }
   }
 
-  getMovieInfo = async (e) => {
-    try {
-      let movieResults = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/movies?searchQuery=${this.state.city}`);
-      console.log(movieResults);
-      this.setState({
-        movieData: movieResults.data,
-        displayMovies: true,
-        displayMovieError: false,
-      });
-
-      console.log(this.state.movieResults);
-    } catch (error) {
-      console.log(error);
-      this.setState({
-        displayMovies: false,
-        displayMovieError: true,
-        movieErrMessage: `${error}`
-      })
-    }
-  }
-
   render() {
+    
+    let movieArrToRender = this.state.movies.map((movie, index) => (
+      <Movie
+        key={index}
+        overview = {movie.overview}
+        average_votes = {movie.average_votes}
+        total_votes = {movie.total_votes}
+        popularity = {movie.popularity}
+        released_on = {movie.released_on}
+      />)
+    )
+
+    let weatherArrToRender = this.state.weatherData.map((weatherByDate, index) => (
+      <Weather
+        key={index}
+        description={weatherByDate.description}
+        date={weatherByDate.date}
+      />)
+    )
 
     return (
       <>
@@ -110,28 +126,33 @@ class App extends React.Component {
               <Form.Control size="md" className="input" onChange={this.handleChange}></Form.Control>
             </Form.Group>
             <Button variant="primary" type="submit">Explore!</Button>
+            <br></br>
           </Form>
         </Container>
         {this.state.renderLatLon ?
           <ListGroup as="ul" className="text-center">
+            <br></br>
             <ListGroup.Item as="li" active>{this.state.name}</ListGroup.Item>
-            <ListGroup.Item as="li">Latitude: {this.state.lat}; Longitute: {this.state.lon}</ListGroup.Item>
+            <ListGroup.Item as="li">Latitude: {Math.floor(this.state.lat)}; Longitute: {Math.floor(this.state.lon)}</ListGroup.Item>
             {this.state.displayWeather ?
-              <ListGroup.Item as="li">Weather Forecast by Date
-                <Weather
-                  weatherData={this.state.weatherData}
-                />
+              <ListGroup.Item className="weather-title" as="li"><h3>Weather Forecast by Date</h3>
+                <div>
+                  <CardColumns className="one">
+                    {/* We replaced the render methods with components that we import */}
+                    {weatherArrToRender}
+                    {movieArrToRender}
+                    {/* <Weather /> */}
+                    {/* <Movie /> */}
+                  </CardColumns>
+                </div>  
               </ListGroup.Item> : ''}
             {this.state.displayWeatherError ? <h3>{this.state.weatherErrMessage}</h3> : ''}
-            <ListGroup.Item as="li">
-              <Image alt='city' src={this.state.map} rounded />
-            </ListGroup.Item>
+            <ListGroup.Item as="li"><Image alt='city' src={`https://maps.locationiq.com/v3/staticmap?key=${process.env.REACT_APP_LOCATIONIQ_KEY}&center=${this.state.lat},${this.state.lon}&zoom=12`} rounded /></ListGroup.Item>
           </ListGroup> : ''}
         {this.state.displayError ? <h3>{this.state.errorMessage}</h3> : ''}
-        {this.state.displayMovies ? <Movies movieData={this.state.movieData} /> : ''}
-        {this.state.displayMovieError ? <h3>{this.state.movieErrMessage}</h3> : ''}
       </>
     )
   }
 }
-export default App;
+
+export default CityForm;
