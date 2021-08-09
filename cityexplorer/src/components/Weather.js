@@ -5,11 +5,11 @@ import WeatherDay from './WeatherDay';
 class Weather extends React.Component {
 
   render() {
-    let weatherArrToRender = this.props.weatherData.map((weatherByDate, index) => (
+    let weatherArrToRender = this.props.weatherData.map((dailyWeather, index) => (
       <WeatherDay
         key={index}
-        description={weatherByDate.description}
-        date={weatherByDate.date}
+        description={dailyWeather.description}
+        date={dailyWeather.date}
       />)
     )
     return (

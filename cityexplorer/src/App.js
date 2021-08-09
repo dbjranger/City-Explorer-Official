@@ -1,19 +1,28 @@
 import React from 'react';
+
+//CSS
 import './App.css';
+
+//Data Requests
 import axios from 'axios';
+
+//Bootstrap
 import ListGroup from 'react-bootstrap/ListGroup';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Image from 'react-bootstrap/Image';
 import Container from 'react-bootstrap/Container';
+
+//Components
 import Weather from './components/Weather';
 import Movies from './components/Movies';
 
 class App extends React.Component {
-
+//Setting up constructors
   constructor(props) {
     super(props);
     this.state = {
+      //city and map key:values
       city: '',
       lat: 0,
       lon: 0,
@@ -21,10 +30,12 @@ class App extends React.Component {
       renderLatLon: false,
       displayError: false,
       errorMessage: '',
+      //weather key:values
       weatherData: [],
       displayWeather: false,
       displayWeatherError: false,
       weatherErrMessage: '',
+      // movie key:values
       movieData: [],
       displayMovies: false,
       movieErrMessage: '',
@@ -32,13 +43,17 @@ class App extends React.Component {
   };
 
   handleChange = (e) => {
+    //city is variable is being reassigned to the user's input
     this.setState({ city: e.target.value })
   };
 
   getCityInfo = async (e) => {
     e.preventDefault();
     try {
+      //City Results is assigned to all results based on the user's city input
       let cityResults = await axios.get(`https://eu1.locationiq.com/v1/search.php?key=${process.env.REACT_APP_LOCATIONIQ_KEY}&q=${this.state.city}&format=json`);
+      
+      //Assigning variables to the city result at the zero index.  The first response.
       this.setState({
         lat: cityResults.data[0].lat,
         lon: cityResults.data[0].lon,
@@ -47,7 +62,7 @@ class App extends React.Component {
         renderLatLon: true,
         displayError: false,
       })
-      this.getMovieInfo();
+      //error handling  
     } catch (error) {
       this.setState({
         renderLatLon: false,
@@ -57,17 +72,24 @@ class App extends React.Component {
         errorMessage: `Error: ${error.response.status}, ${error.response.data.error}`
       })
     }
+
+    //The Movie, Weather, and City Methods are called through an onSubmit linked to the Bootstrap Form
+    this.getMovieInfo();
     this.getWeatherInfo();
   };
 
-  getWeatherInfo = async (e) => {
+
+  getWeatherInfo = async () => {
     try {
+      //We are creating search parameters within the Weather API url that match the user input for longitude 
+      // and latitude based on the city entered
       let weatherResults = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/weather?lat=${this.state.lat}&lon=${this.state.lon}&searchQuery=${this.state.city}`);
       this.setState({
         weatherData: weatherResults.data,
         displayWeather: true,
         displayWeatherError: false,
       })
+      //Error Handling  NOTE:  Is error a keyword?  Confused about data associated with error, response, status.
     } catch (error) {
       this.setState({
         displayWeather: false,
@@ -78,10 +100,10 @@ class App extends React.Component {
     }
   }
 
-  getMovieInfo = async (e) => {
+  //We are creating a search parameter within the Movie API url that matches the user's city input
+  getMovieInfo = async () => {
     try {
       let movieResults = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/movies?searchQuery=${this.state.city}`);
-      console.log(movieResults);
       this.setState({
         movieData: movieResults.data,
         displayMovies: true,

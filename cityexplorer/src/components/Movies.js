@@ -1,7 +1,7 @@
 import React from 'react';
 import Container from 'react-bootstrap/Container';
 import CardColumns from 'react-bootstrap/CardColumns';
-import Movie from './Movie.js';
+import Movie from './Movie';
 
 class Movies extends React.Component {
 
