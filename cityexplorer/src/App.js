@@ -1,20 +1,28 @@
 import React from 'react';
+
+//CSS
 import './App.css';
+
+//Data Requests
 import axios from 'axios';
+
+//Bootstrap
 import ListGroup from 'react-bootstrap/ListGroup';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Image from 'react-bootstrap/Image';
 import Container from 'react-bootstrap/Container';
-import CardColumns from 'react-bootstrap/CardColumns';
-import Weather from './Weather';
 
+//Components
+import Weather from './components/Weather';
+import Movies from './components/Movies';
 
 class App extends React.Component {
-
+//Setting up constructors
   constructor(props) {
     super(props);
     this.state = {
+      //city and map key:values
       city: '',
       lat: 0,
       lon: 0,
@@ -22,70 +30,98 @@ class App extends React.Component {
       renderLatLon: false,
       displayError: false,
       errorMessage: '',
+      //weather key:values
       weatherData: [],
       displayWeather: false,
       displayWeatherError: false,
       weatherErrMessage: '',
+      // movie key:values
+      movieData: [],
+      displayMovies: false,
+      movieErrMessage: '',
     }
   };
 
   handleChange = (e) => {
+    //city is variable is being reassigned to the user's input
     this.setState({ city: e.target.value })
   };
 
   getCityInfo = async (e) => {
     e.preventDefault();
     try {
+      //City Results is assigned to all results based on the user's city input
       let cityResults = await axios.get(`https://eu1.locationiq.com/v1/search.php?key=${process.env.REACT_APP_LOCATIONIQ_KEY}&q=${this.state.city}&format=json`);
+      
+      //Assigning variables to the city result at the zero index.  The first response.
       this.setState({
         lat: cityResults.data[0].lat,
         lon: cityResults.data[0].lon,
         name: cityResults.data[0].display_name,
+        map: `https://maps.locationiq.com/v3/staticmap?key=${process.env.REACT_APP_LOCATIONIQ_KEY}&center=${cityResults.data[0].lat},${cityResults.data[0].lon}&zoom=12`,
         renderLatLon: true,
         displayError: false,
       })
+      //error handling  
     } catch (error) {
       this.setState({
         renderLatLon: false,
         displayError: true,
         displayWeather: false,
+        displayMovies: false,
         errorMessage: `Error: ${error.response.status}, ${error.response.data.error}`
       })
     }
-    this.getWeatherinfo();
+
+    //The Movie, Weather, and City Methods are called through an onSubmit linked to the Bootstrap Form
+    this.getMovieInfo();
+    this.getWeatherInfo();
   };
 
-  getWeatherinfo = async (e) => {
+
+  getWeatherInfo = async () => {
     try {
-      let weatherResults = await axios.get(`http://localhost:3001/weather?lat=${this.state.lat}&lon=${this.state.lon}`);
-      
+      //We are creating search parameters within the Weather API url that match the user input for longitude 
+      // and latitude based on the city entered
+      let weatherResults = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/weather?lat=${this.state.lat}&lon=${this.state.lon}&searchQuery=${this.state.city}`);
       this.setState({
         weatherData: weatherResults.data,
         displayWeather: true,
         displayWeatherError: false,
       })
+      //Error Handling  NOTE:  Is error a keyword?  Confused about data associated with error, response, status.
     } catch (error) {
       this.setState({
         displayWeather: false,
         displayWeatherError: true,
         weatherErrMessage: `Error: ${error.response.status}, ${error.response.data}`,
-
       })
       console.log(error.response);
     }
   }
 
-  render() {
-    
-    let weatherArrToRender = this.state.weatherData.map((weatherByDate, index) => (
-      <Weather
-        key={index}
-        description={weatherByDate.description}
-        date={weatherByDate.date}
-      />)
-    )
+  //We are creating a search parameter within the Movie API url that matches the user's city input
+  getMovieInfo = async () => {
+    try {
+      let movieResults = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/movies?searchQuery=${this.state.city}`);
+      this.setState({
+        movieData: movieResults.data,
+        displayMovies: true,
+        displayMovieError: false,
+      });
 
-    
+      console.log(this.state.movieResults);
+    } catch (error) {
+      console.log(error);
+      this.setState({
+        displayMovies: false,
+        displayMovieError: true,
+        movieErrMessage: `${error}`
+      })
+    }
+  }
+
+  render() {
 
     return (
       <>
@@ -96,29 +132,28 @@ class App extends React.Component {
               <Form.Control size="md" className="input" onChange={this.handleChange}></Form.Control>
             </Form.Group>
             <Button variant="primary" type="submit">Explore!</Button>
-            <br></br>
           </Form>
         </Container>
         {this.state.renderLatLon ?
           <ListGroup as="ul" className="text-center">
-            <br></br>
             <ListGroup.Item as="li" active>{this.state.name}</ListGroup.Item>
-            <ListGroup.Item as="li">Latitude: {Math.floor(this.state.lat)}; Longitute: {Math.floor(this.state.lon)}</ListGroup.Item>
+            <ListGroup.Item as="li">Latitude: {this.state.lat}; Longitute: {this.state.lon}</ListGroup.Item>
             {this.state.displayWeather ?
-              <ListGroup.Item className="weather-title" as="li"><h3>Weather Forecast by Date</h3>
-                <div>
-                  <CardColumns className="one">
-                    {weatherArrToRender}
-                  </CardColumns>
-                </div>  
+              <ListGroup.Item as="li">Weather Forecast by Date
+                <Weather
+                  weatherData={this.state.weatherData}
+                />
               </ListGroup.Item> : ''}
             {this.state.displayWeatherError ? <h3>{this.state.weatherErrMessage}</h3> : ''}
-            <ListGroup.Item as="li"><Image alt='city' src={`https://maps.locationiq.com/v3/staticmap?key=${process.env.REACT_APP_LOCATIONIQ_KEY}&center=${this.state.lat},${this.state.lon}&zoom=12`} rounded /></ListGroup.Item>
+            <ListGroup.Item as="li">
+              <Image alt='city' src={this.state.map} rounded />
+            </ListGroup.Item>
           </ListGroup> : ''}
         {this.state.displayError ? <h3>{this.state.errorMessage}</h3> : ''}
+        {this.state.displayMovies ? <Movies movieData={this.state.movieData} /> : ''}
+        {this.state.displayMovieError ? <h3>{this.state.movieErrMessage}</h3> : ''}
       </>
     )
   }
 }
-
 export default App;
